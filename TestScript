@@ -1,0 +1,92 @@
+package com.aspire.testscripts;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.remote.RemoteWebDriver;
+import org.testng.Assert;
+import org.testng.annotations.Test;
+
+public class DemoScript {
+
+	private RemoteWebDriver driver;
+	private String LT_USERNAME = System.getenv("LT_USERNAME");
+
+	private String LT_ACCESS_KEY = System.getenv("LT_ACCESS_KEY");
+	private String hub = "@hub.lambdatest.com/wd/hub";
+
+	@Test
+	public void chromeSetup() throws InterruptedException, MalformedURLException {
+		ChromeOptions browserOptions = new ChromeOptions();
+		browserOptions.setPlatformName("Windows 10");
+		browserOptions.setBrowserVersion("86.0");
+		HashMap<String, Object> ltOptions = new HashMap<String, Object>();
+		ltOptions.put("username", LT_USERNAME);
+		ltOptions.put("accessKey", LT_ACCESS_KEY);
+		ltOptions.put("video", true);
+		ltOptions.put("build", "LambdatestAssignmentChrome");
+		ltOptions.put("project", "Assignment1");
+		ltOptions.put("name", "TestAssignment");
+		ltOptions.put("console", "info");
+		ltOptions.put("visual", true);
+		ltOptions.put("network", true);
+		ltOptions.put("w3c", true);
+		browserOptions.setCapability("LT:Options", ltOptions);
+
+		driver = new RemoteWebDriver(new URL("https://" + LT_USERNAME + ":" + LT_ACCESS_KEY + hub), browserOptions);
+
+		// Navigate to https://www.lambdatest.com
+
+		driver.get("https://www.lambdatest.com");
+		WebElement cookies = driver.findElement(By.xpath("//*[@id=\"__next\"]/div[2]/div/div/div[2]/div/span[1]"));
+		cookies.click();
+	
+		((JavascriptExecutor) driver).executeScript("window.scrollBy(0,4948)");
+		Thread.sleep(5000);
+		WebElement element = driver.findElement(By.xpath("//*[@id=\"__next\"]/div[1]/section[7]/div/div/div/div/a"));
+
+		String parent = driver.getWindowHandle();
+
+		// Click on the link and ensure that it opens in a New Tab.
+		Actions actions = new Actions(driver);
+		actions.keyDown(Keys.CONTROL).click(element).keyUp(Keys.CONTROL).perform();
+
+		/*
+		 * Save the window handles in a List (or array). Print the window handles of the
+		 * opened windows (now there are two windows open).
+		 */
+
+		Set<String> windowHandles = driver.getWindowHandles();
+		List<String> windowHandlesList = new ArrayList<>(windowHandles);
+
+		for (String window : windowHandlesList) {
+			System.out.println("Window Handles: " + window);
+			if (!window.equals(parent)) {
+				driver.switchTo().window(window);
+				break;
+			}
+
+		}
+
+		// Verify whether the URL is the same as the expected URL (if not, throw an
+		// Assert).
+		String currentURL = driver.getCurrentUrl();
+		String expectedURL = "https://www.lambdatest.com/integrations";
+		Assert.assertEquals(expectedURL, currentURL);
+
+		// Close the current browser window.
+		driver.close();
+		driver.quit();
+	}
+
+}
